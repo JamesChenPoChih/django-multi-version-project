@@ -11,19 +11,24 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 import os
 from pathlib import Path
+## .env 屏蔽帳號密碼
+
+import os
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env()
+environ.Env.read_env(BASE_DIR / '.env')  # 這一行是讀取你的 .env 檔案
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-beujf-=!4&e4&^!6i5_gn8=o&4!i4vk_me+4ca-r_cb60n-4am'
+SECRET_KEY = env('SECRET_KEY')
+DEBUG = env.bool('DEBUG', default=False)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -38,14 +43,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'login',
-    # Add Social OAuth
+
+    ## Add accounts to login
+    'accounts', 
+    # 'accounts.apps.AccountsConfig',  # 用 AppsConfig 才能觸發 signals
+    ## Add Social OAuth
     'django.contrib.sites',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.github',
-    # Add Social OAuth by ChatGPT
+    ## Add Social OAuth by ChatGPT
 
 ]
 
@@ -80,8 +89,9 @@ MIDDLEWARE = [
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': '***REMOVED***',
-            'secret': '***REMOVED***',
+            'client_id': env('GOOGLE_CLIENT_ID'), # <== 替換成 Google的client ID 
+
+            'secret': env('GOOGLE_CLIENT_SECRET'), # <== 替換成 Google的Secret 
         },
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {
@@ -92,12 +102,11 @@ SOCIALACCOUNT_PROVIDERS = {
     },
     'github': {
         'APP': {
-            'client_id': '***REMOVED***',  # <== 替換成 GitHub 的
-            'secret': '***REMOVED***',  # <== 替換成 GitHub 的
+            'client_id': env('GITHUB_CLIENT_ID'),  # <== 替換成 GitHub 的client ID  
+            'secret': env('GITHUB_CLIENT_SECRET'),  # <== 替換成 GitHub 的Secret 
         }
     }
 }
-
 
 
 ROOT_URLCONF = 'project.urls'
@@ -136,15 +145,13 @@ WSGI_APPLICATION = 'project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mydb',
-        'USER': 'Admin01',
-        'PASSWORD': '***REMOVED***',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
 }
-
-
 
 
 
@@ -187,11 +194,21 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 ##新增的下面幾行
 
+# STATIC_URL = '/static/'
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+# #STATICFILES_DIRS = [
+# #     os.path.join(BASE_DIR, 'static'),
+# # ]
+
+## 設定 .env檔案 2025-0723
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-#STATICFILES_DIRS = [
-#     os.path.join(BASE_DIR, 'static'),
-# ]
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # collectstatic 會把所有 app 的 static 檔放這裡
+
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',  # 你專案自己寫的 static 檔放這裡
+]
+
 
 
 
@@ -201,3 +218,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+print("Reading .env from:", BASE_DIR / '.env')
+print("SECRET_KEY in env:", env('SECRET_KEY', default='NOT FOUND'))
